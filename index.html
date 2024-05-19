@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interfaz de Usuario CRUD</title>
+<style>
+  /* Estilos básicos */
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+  }
+  /* Estilos para la tabla */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  /* Formulario estilizado */
+  form {
+    margin-bottom: 20px;
+  }
+  input[type="text"], input[type="submit"] {
+    padding: 10px;
+    margin-right: 10px;
+  }
+  input[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  input[type="submit"]:hover {
+    background-color: #45a049;
+  }
+</style>
+</head>
+<body>
+
+<h1>Lista de Canciones</h1>
+
+<!-- Formulario para agregar una nueva canción -->
+<form id="addSongForm">
+  <input type="text" id="titulo" placeholder="Título" required>
+  <input type="text" id="artista" placeholder="Artista" required>
+  <input type="text" id="genero" placeholder="Género" required>
+  <input type="text" id="enlace" placeholder="Enlace de Reproducción (Spotify)" required>
+  <input type="submit" value="Agregar Canción">
+</form>
+
+<!-- Tabla para mostrar las canciones -->
+<table id="songTable">
+  <thead>
+    <tr>
+      <th>Título</th>
+      <th>Artista</th>
+      <th>Género</th>
+      <th>Reproductor</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Aquí se llenarán dinámicamente los datos de las canciones -->
+  </tbody>
+</table>
+
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+<script>
+  // Configura Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDqfrC-SsX_c8TSTbCj4_xOCugv-6be0Dg",
+    authDomain: "catalogo-canciones.firebaseapp.com",
+    projectId: "catalogo-canciones",
+    storageBucket: "catalogo-canciones.appspot.com",
+    messagingSenderId: "195533290745",
+    appId: "1:195533290745:web:062cfe1832598f5d0b9a4e"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  // Referencia a la colección de canciones
+  const songsCollection = firebase.firestore().collection('canciones');
+
+  // Función para cargar las canciones desde Firebase
+  function cargarCanciones() {
+    songsCollection.onSnapshot(snapshot => {
+      const tableBody = document.querySelector('#songTable tbody');
+      tableBody.innerHTML = '';
+      snapshot.forEach(doc => {
+        const song = doc.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${song.titulo}</td>
+          <td>${song.artista}</td>
+          <td>${song.genero}</td>
+          <td><audio controls><source src="${song.enlace}" type="audio/mp3">Tu navegador no soporta la reproducción de audio.</audio></td>
+          <td>
+            <button onclick="editarCancion('${doc.id}', '${song.titulo}', '${song.artista}', '${song.genero}')">Editar</button>
+            <button onclick="eliminarCancion('${doc.id}')">Eliminar</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    });
+  }
+
+  // Cargar las canciones al cargar la página
+  cargarCanciones();
+
+  // Función para agregar una nueva canción
+  document.getElementById('addSongForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const titulo = document.getElementById('titulo').value;
+    const artista = document.getElementById('artista').value;
+    const genero = document.getElementById('genero').value;
+    const enlace = document.getElementById('enlace').value;
+    songsCollection.add({ titulo, artista, genero, enlace });
+    document.getElementById('addSongForm').reset();
+  });
+
+  // Función para editar una canción
+  function editarCancion(id, titulo, artista, genero) {
+    document.getElementById('titulo').value = titulo;
+    document.getElementById('artista').value = artista;
+    document.getElementById('genero').value = genero;
+    document.getElementById('addSongForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      songsCollection.doc(id).update({
+        titulo: document.getElementById('titulo').value,
+        artista: document.getElementById('artista').value,
+        genero: document.getElementById('genero').value,
+        enlace: document.getElementById('enlace').value
+      });
+      document.getElementById('addSongForm').reset();
+    });
+  }
+
+  // Función para eliminar una canción
+  function eliminarCancion(id) {
+    songsCollection.doc(id).delete();
+  }
+</script>
+
+</body>
+</html>
